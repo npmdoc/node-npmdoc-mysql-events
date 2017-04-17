@@ -1,0 +1,289 @@
+<div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a
+
+        href="https://github.com/spencerlambert/mysql-events"
+
+    >mysql-events (v0.0.10)</a>
+</h1>
+<h4>A node.js package that watches a MySQL database and runs callbacks on matched events like updates on tables and/or specific columns.</h4>
+<div class="apidocSectionDiv"><a
+    href="#apidoc.tableOfContents"
+    id="apidoc.tableOfContents"
+><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.mysql-events">module mysql-events</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.mysql-events.mysql-events">
+            function <span class="apidocSignatureSpan"></span>mysql-events
+            <span class="apidocSignatureSpan">(dsn, settings)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.mysql-events.toString">
+            function <span class="apidocSignatureSpan">mysql-events.</span>toString
+            <span class="apidocSignatureSpan">()</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.mysql-events.toString">module mysql-events.toString</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.mysql-events.toString.toString">
+            function <span class="apidocSignatureSpan">mysql-events.</span>toString
+            <span class="apidocSignatureSpan">()</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.mysql-events" id="apidoc.module.mysql-events">module mysql-events</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.mysql-events.mysql-events" id="apidoc.element.mysql-events.mysql-events">
+        function <span class="apidocSignatureSpan"></span>mysql-events
+        <span class="apidocSignatureSpan">(dsn, settings)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">mysql-events = function (dsn, settings) {
+  var mySQLEvents = {
+    //Watching - to check whether the zongji.on() has been called or not
+    started: false,
+
+    //zongji instance
+    zongji: {},
+
+    //db list which are currenly watching
+    databases: [],
+
+    //table list, key will be dbname
+    tables: {},
+
+    //column list - 2D Array of objects, [dbname][table][column]
+    columns: {},
+
+    //events - unique list of events, thats passed to includeEvents to zongji
+    events: [&#x27;tablemap&#x27;, &#x27;writerows&#x27;, &#x27;updaterows&#x27;, &#x27;deleterows&#x27;],
+
+    //triggers - each MySQLEvents.add() generate an object, stored here
+    triggers: [],
+
+    dsn,
+
+    //settings available - serverId, startAtEnd, binlogName, binlogNextPos, includeEvents, excludeEvents, includeSchema, excludeSchema
+    settings: settings || {},
+
+    //connect - instantiate an ZongJi Class
+    connect: function(dsn) {
+      if (!_underScore.isUndefined(dsn.host) &#x26;&#x26;
+        !_underScore.isUndefined(dsn.user) &#x26;&#x26;
+        !_underScore.isUndefined(dsn.password)
+      ) {
+        this.dsn = dsn;
+
+      }
+      else {
+        throw new Error(&#x27;Error: MySQLEvents connect() needs host, user &#x26; password&#x27;);
+      }
+    },
+
+    //Add a watcher
+    add: function(watchon, callback, columnValue) {
+
+      var trigger = {
+        trigger: watchon,
+        callback: callback
+      };
+      if (!_underScore.isUndefined(columnValue)) {
+        _underScore.extend(trigger, {
+          value: columnValue
+        });
+      }
+
+      this.triggers.push(trigger);
+      this.reload();
+
+      return trigger;
+    },
+
+    //unset watcher - this is the stop() method on the returned object of add() call
+    remove: function(trigger) {
+      this.triggers = _underScore.reject(this.triggers, function(obj) {
+        return _underScore.isEqual(obj, trigger);
+      });
+      this.reload();
+    },
+
+    //Stop all watchers
+    stop: function() {
+      this.zongji.stop();
+    },
+
+    //set the zongji includeSchema based on current watcher list
+    reload: function() {
+
+      var map = {
+        startAtEnd: true,
+        includeEvents: this.events,
+        includeSchema: this.includeSchema()
+      };
+      //override default settings
+      Object.assign(map, this.settings);
+
+      //check whether ZongJi started
+      if (!this.started) {
+        this.zongji = zongjiManager(this.dsn, map, function(evt) {
+          if (
+            evt.getEventName() === &#x27;writerows&#x27; ||
+            evt.getEventName() === &#x27;updaterows&#x27; ||
+            evt.getEventName() === &#x27;deleterows&#x27;
+          ) {
+            //console.log(evt.getEventName());
+            //console.log(&#x22;zongji ctrlConnection&#x22;, mySQLEvents.zongji.ctrlConnection.state);
+
+            var database = evt.tableMap[evt.tableId].parentSchema;
+            var table = evt.tableMap[evt.tableId].tableName;
+            var columns = evt.tableMap[evt.tableId].columns;
+            var oldRow = {};
+            var newRow = {};
+            var changedColumns = [];
+
+            _underScore.each(evt.rows, function(row) {
+              //console.log(row);
+              if (evt.getEventName() == &#x27;writerows&#x27;) {
+                oldRow = null;
+                newRow = {
+                  database: database,
+                  table: table,
+                  affectedColumns: columns,
+                  changedColumns: changedColumns,
+                  fields: row
+                };
+              }
+              if (evt.getEventName() == &#x27;deleterows&#x27;) {
+                newRow = null;
+                oldRow = {
+                  database: database,
+                  table: table,
+                  affectedColumns: columns,
+                  changedColumns: changedColumns,
+                  fields: row
+                };
+              }
+              if (evt.getEventName() == &#x27;updaterows&#x27;) {
+                //get the changed rows list
+                _underScore.each(row.before, function(val, key) {
+                  if (row.before[key] != row.after[key]) {
+                    changedColumns.push(key);
+                  }
+                });
+
+                oldRow = {
+                  database: database, ...</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.mysql-events.toString" id="apidoc.element.mysql-events.toString">
+        function <span class="apidocSignatureSpan">mysql-events.</span>toString
+        <span class="apidocSignatureSpan">()</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">toString = function () {
+    return text;
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.mysql-events.toString" id="apidoc.module.mysql-events.toString">module mysql-events.toString</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.mysql-events.toString.toString" id="apidoc.element.mysql-events.toString.toString">
+        function <span class="apidocSignatureSpan">mysql-events.</span>toString
+        <span class="apidocSignatureSpan">()</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">function toString() { [native code] }</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
