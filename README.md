@@ -1,4 +1,7 @@
-# api documentation for  [mysql-events (v0.0.10)](https://github.com/spencerlambert/mysql-events)  [![npm package](https://img.shields.io/npm/v/npmdoc-mysql-events.svg?style=flat-square)](https://www.npmjs.org/package/npmdoc-mysql-events) [![travis-ci.org build-status](https://api.travis-ci.org/npmdoc/node-npmdoc-mysql-events.svg)](https://travis-ci.org/npmdoc/node-npmdoc-mysql-events)
+# npmdoc-mysql-events
+
+#### basic api documentation for  [mysql-events (v0.0.10)](https://github.com/spencerlambert/mysql-events)  [![npm package](https://img.shields.io/npm/v/npmdoc-mysql-events.svg?style=flat-square)](https://www.npmjs.org/package/npmdoc-mysql-events) [![travis-ci.org build-status](https://api.travis-ci.org/npmdoc/node-npmdoc-mysql-events.svg)](https://travis-ci.org/npmdoc/node-npmdoc-mysql-events)
+
 #### A node.js package that watches a MySQL database and runs callbacks on matched events like updates on tables and/or specific columns.
 
 [![NPM](https://nodei.co/npm/mysql-events.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.com/package/mysql-events)
@@ -75,7 +78,8 @@
     "scripts": {
         "test": ""
     },
-    "version": "0.0.10"
+    "version": "0.0.10",
+    "bin": {}
 }
 ```
 
